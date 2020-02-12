@@ -6,7 +6,7 @@ void Application::InitVariables(void)
 
 	//Set the position and target of the camera
 	//(I'm at [0,0,10], looking at [0,0,0] and up is the positive Y axis)
-	m_pCameraMngr->SetPositionTargetAndUpward(AXIS_Z * 10.0f, ZERO_V3, AXIS_Y);
+	m_pCameraMngr->SetPositionTargetAndUp(AXIS_Z * 10.0f, ZERO_V3, AXIS_Y);
 
 	//Allocate the memory for the shapes
 	m_pCube = new MyMesh();
@@ -77,27 +77,27 @@ void Application::Display(void)
 
 	//Cube
 	v3Position = vector3(glm::sin(glm::radians(dAngle * 0)) * 3.0f, glm::cos(glm::radians(dAngle * 0)) * 3.0f, 0.0f);
-	m_pCube->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), glm::radians(static_cast<float>(dTimer) * 20.0f), AXIS_X));
+	m_pCube->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), static_cast<float>(dTimer) * 20.0f, AXIS_X));
 
 	//Cone
 	v3Position = vector3(glm::sin(glm::radians(dAngle * 1)) * 3.0f, glm::cos(glm::radians(dAngle * 1)) * 3.0f, 0.0f);
-	m_pCone->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), glm::radians(static_cast<float>(dTimer) * 20.0f), AXIS_X));
+	m_pCone->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), static_cast<float>(dTimer) * 20.0f, AXIS_X));
 
 	//Cylinder
 	v3Position = vector3(glm::sin(glm::radians(dAngle * 2)) * 3.0f, glm::cos(glm::radians(dAngle * 2)) * 3.0f, 0.0f);
-	m_pCylinder->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), glm::radians(static_cast<float>(dTimer) * 20.0f), AXIS_X));
+	m_pCylinder->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), static_cast<float>(dTimer) * 20.0f, AXIS_X));
 
 	//Tube
 	v3Position = vector3(glm::sin(glm::radians(dAngle * 3)) * 3.0f, glm::cos(glm::radians(dAngle * 3)) * 3.0f, 0.0f);
-	m_pTube->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), glm::radians(static_cast<float>(dTimer) * 20.0f), AXIS_X));
+	m_pTube->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), static_cast<float>(dTimer) * 20.0f, AXIS_X));
 
 	//Sphere
 	v3Position = vector3(glm::sin(glm::radians(dAngle * 4)) * 3.0f, glm::cos(glm::radians(dAngle * 4)) * 3.0f, 0.0f);
-	m_pSphere->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), glm::radians(static_cast<float>(dTimer) * 20.0f), AXIS_X));
+	m_pSphere->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), static_cast<float>(dTimer) * 20.0f, AXIS_X));
 
 	//Tourus
 	v3Position = vector3(glm::sin(glm::radians(dAngle * 5)) * 3.0f, glm::cos(glm::radians(dAngle * 5)) * 3.0f, 0.0f);
-	m_pTorus->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), glm::radians(static_cast<float>(dTimer) * 20.0f), AXIS_X));
+	m_pTorus->Render(m4Projection, m4View, glm::rotate(glm::translate(v3Position), static_cast<float>(dTimer) * 20.0f, AXIS_X));
 
 	// draw a skybox
 	m_pMeshMngr->AddSkyboxToRenderList();

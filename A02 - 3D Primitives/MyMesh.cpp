@@ -1,4 +1,5 @@
 #include "MyMesh.h"
+# define M_PI           3.14159265358979323846
 void MyMesh::Init(void)
 {
 	m_bBinded = false;
@@ -276,9 +277,18 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	float theta = (2 * M_PI) / a_nSubdivisions;
 	// -------------------------------
+	for (uint i = 0; i < a_nSubdivisions; i++)
+	{
+		vector3 point0(0, 0, 0);
+		vector3 pointH(0, a_fHeight, 0);
+		vector3 point1(a_fRadius * sin(theta * i), 0, a_fRadius * cos(theta * i));
+		vector3 point2(a_fRadius * sin(theta * (i + 1)), 0, a_fRadius * cos(theta * (i + 1)));
 
+		AddTri(point1, point0, point2);
+		AddTri(pointH, point1, point2);
+	}
 	// Adding information about color
 	CompleteMesh(a_v3Color);
 	CompileOpenGL3X();
@@ -300,9 +310,21 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	float theta = (2 * M_PI) / a_nSubdivisions;
 	// -------------------------------
+	for (uint i = 0; i < a_nSubdivisions; i++)
+	{
+		vector3 point0(0, 0, 0);
+		vector3 pointH(0, a_fHeight, 0);
+		vector3 point1(a_fRadius * sin(theta * i), 0, a_fRadius * cos(theta * i));
+		vector3 point2(a_fRadius * sin(theta * (i + 1)), 0, a_fRadius * cos(theta * (i + 1)));
+		vector3 point3(a_fRadius * sin(theta * i), a_fHeight, a_fRadius * cos(theta * i));
+		vector3 point4(a_fRadius * sin(theta * (i + 1)), a_fHeight, a_fRadius * cos(theta * (i + 1)));
 
+		AddQuad(point1, point2, point3, point4);
+		AddTri(point1,point0,point2);
+		AddTri(pointH, point3, point4);
+	}
 	// Adding information about color
 	CompleteMesh(a_v3Color);
 	CompileOpenGL3X();
@@ -329,10 +351,27 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	float theta = (2 * M_PI) / a_nSubdivisions;
+	for (uint i = 0; i < a_nSubdivisions; i++)
+	{
+		vector3 point0(0, 0, 0);
+		vector3 pointH(0, a_fHeight, 0);
+		vector3 i_point1(a_fInnerRadius * sin(theta * i), 0, a_fInnerRadius * cos(theta * i));
+		vector3 i_point2(a_fInnerRadius * sin(theta * (i + 1)), 0, a_fInnerRadius * cos(theta * (i + 1)));
+		vector3 i_point3(a_fInnerRadius * sin(theta * i), a_fHeight, a_fInnerRadius * cos(theta * i));
+		vector3 i_point4(a_fInnerRadius * sin(theta * (i + 1)), a_fHeight, a_fInnerRadius * cos(theta * (i + 1)));
 
+		vector3 o_point1(a_fOuterRadius * sin(theta * i), 0, a_fOuterRadius * cos(theta * i));
+		vector3 o_point2(a_fOuterRadius * sin(theta * (i + 1)), 0, a_fOuterRadius * cos(theta * (i + 1)));
+		vector3 o_point3(a_fOuterRadius * sin(theta * i), a_fHeight, a_fOuterRadius * cos(theta * i));
+		vector3 o_point4(a_fOuterRadius * sin(theta * (i + 1)), a_fHeight, a_fOuterRadius * cos(theta * (i + 1)));
+
+		AddQuad(i_point2, i_point1, i_point4, i_point3);//inner loop
+		AddQuad(i_point1, i_point2, o_point1, o_point2);//bottom
+		AddQuad(o_point1, o_point2, o_point3, o_point4);//outer loop
+		AddQuad(i_point4, i_point3, o_point4, o_point3);//top
+	}
+	
 	// Adding information about color
 	CompleteMesh(a_v3Color);
 	CompileOpenGL3X();
@@ -362,7 +401,6 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
 	// -------------------------------
 
 	// Adding information about color
@@ -382,12 +420,33 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 	}
 	if (a_nSubdivisions > 6)
 		a_nSubdivisions = 6;
-
+	
 	Release();
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	//need to find theta and phi for each point based on its subdivision
+	//then calculate its location based on its radius
+	//then attach the coordinates together
+	
+	float thetaIncrem = (2 * M_PI) / a_nSubdivisions;
+	float phiIncrem = M_PI/ a_nSubdivisions;
+	for(uint i=0; i<a_nSubdivisions;i++)
+	{
+		for (uint j = 0; j < a_nSubdivisions; j++)
+		{
+			float phi1 = M_PI / 2 - ((float)i * phiIncrem);
+			float theta1 = thetaIncrem * j;
+			float phi2 = M_PI / 2 - ((float)(i+1) * phiIncrem);
+			float theta2 = thetaIncrem * (j+1);
+			vector3 point1(a_fRadius*cos(phi1)*cos(theta1), a_fRadius* cos(phi1) * sin(theta1), a_fRadius*sin(phi1));
+			vector3 point2(a_fRadius * cos(phi1) * cos(theta2), a_fRadius * cos(phi1) * sin(theta2), a_fRadius * sin(phi1));
+			vector3 point3(a_fRadius * cos(phi2) * cos(theta1), a_fRadius * cos(phi2) * sin(theta1), a_fRadius * sin(phi2));
+			vector3 point4(a_fRadius * cos(phi2) * cos(theta2), a_fRadius * cos(phi2) * sin(theta2), a_fRadius * sin(phi2));
+
+			AddQuad(point1,point2,point3,point4);
+		}
+	}
 	// -------------------------------
 
 	// Adding information about color
