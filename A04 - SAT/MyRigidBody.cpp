@@ -232,9 +232,64 @@ bool MyRigidBody::IsColliding(MyRigidBody* const a_pOther)
 	//if they are colliding check the SAT
 	if (bColliding)
 	{
-		if(SAT(a_pOther) != eSATResults::SAT_NONE)
+		if (SAT(a_pOther) != eSATResults::SAT_NONE)
+		{
 			bColliding = false;// reset to false
+		}
 	}
+	/*
+	else
+	{
+		vector3 t = (a_pOther->GetCenterGlobal() - GetCenterGlobal())/2;
+		switch (SAT(a_pOther))
+		{
+			case 1:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 2:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 3:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 4:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 5:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 6:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 7:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 8:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 9:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 10:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 11:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 12:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 13:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 14:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+			case 15:
+				m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, m_v3Center), vector3(1, 1, 1), 1);
+				break;
+		}
+	}*/
 
 	if (bColliding) //they are colliding
 	{
@@ -287,6 +342,176 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	(eSATResults::SAT_NONE has a value of 0)
 	*/
 
-	//there is no axis test that separates this two objects
+	float ra, rb;
+	vector3 l_v3OtherHalfWidth=a_pOther->GetHalfWidth();
+	glm::mat3x3 R, AbsR;
+
+	for (int i = 0; i < 3; i++) 
+	{
+		for (int j = 0; j < 3; j++) {
+			// Compute rotation matrix expressing b in a's coordinate frame
+			R[i][j] = glm::dot(GetModelMatrix()[i], a_pOther->GetModelMatrix()[j]);
+			AbsR[i][j] = abs(R[i][j])+0.01;
+		}
+	}
+	// Compute translation vector t
+	vector3 t = a_pOther->GetCenterGlobal() - GetCenterGlobal();
+	// Bring translation into a's coordinate frame
+	t = vector3(glm::dot(vector4(t,1), GetModelMatrix()[0]), glm::dot(vector4(t,1), GetModelMatrix()[1]), glm::dot(vector4(t,1), GetModelMatrix()[2]));
+
+	// Test axes L = A0, L = A1, L = A2
+	for (int i = 0; i < 3; i++) {
+		ra = m_v3HalfWidth[i];
+		rb = l_v3OtherHalfWidth[0] * AbsR[i][0] + l_v3OtherHalfWidth[1] * AbsR[i][1] + l_v3OtherHalfWidth[2] * AbsR[i][2];
+		if (abs(t[i]) > ra + rb) return 1;
+	}
+
+	// Test axes L = B0, L = B1, L = B2
+	for (int i = 0; i < 3; i++) {
+		ra = m_v3HalfWidth[0] * AbsR[0][i] + m_v3HalfWidth[1] * AbsR[1][i] + m_v3HalfWidth[2] * AbsR[2][i];
+		rb = l_v3OtherHalfWidth[i];
+		if (abs(t[0] * R[0][i] + t[1] * R[1][i] + t[2] * R[2][i]) > ra + rb) return 1;
+	}
+
+	// Test axis L = A0 x B0
+	ra = m_v3HalfWidth[1] * AbsR[2][0] + m_v3HalfWidth[2] * AbsR[1][0];
+	rb = l_v3OtherHalfWidth[1] * AbsR[0][2] + l_v3OtherHalfWidth[2] * AbsR[0][1];
+	if (abs(t[2] * R[1][0] - t[1] * R[2][0]) > ra + rb) return 7;
+
+	// Test axis L = A0 x B1
+	ra = m_v3HalfWidth[1] * AbsR[2][1] + m_v3HalfWidth[2] * AbsR[1][1];
+	rb = l_v3OtherHalfWidth[0] * AbsR[0][2] + l_v3OtherHalfWidth[2] * AbsR[0][0];
+	if (abs(t[2] * R[1][1] - t[1] * R[2][1]) > ra + rb) return 8;
+
+	// Test axis L = A0 x B2
+	ra = m_v3HalfWidth[1] * AbsR[2][2] + m_v3HalfWidth[2] * AbsR[1][2];
+	rb = l_v3OtherHalfWidth[0] * AbsR[0][1] + l_v3OtherHalfWidth[1] * AbsR[0][0];
+	if (abs(t[2] * R[1][2] - t[1] * R[2][2]) > ra + rb) return 9;
+
+	// Test axis L = A1 x B0
+	ra = m_v3HalfWidth[0] * AbsR[2][0] + m_v3HalfWidth[2] * AbsR[0][0];
+	rb = l_v3OtherHalfWidth[1] * AbsR[1][2] + l_v3OtherHalfWidth[2] * AbsR[1][1];
+	if (abs(t[0] * R[2][0] - t[2] * R[0][0]) > ra + rb) return 10;
+
+	// Test axis L = A1 x B1
+	ra = m_v3HalfWidth[0] * AbsR[2][1] + m_v3HalfWidth[2] * AbsR[0][1];
+	rb = l_v3OtherHalfWidth[0] * AbsR[1][2] + l_v3OtherHalfWidth[2] * AbsR[1][0];
+	if (abs(t[0] * R[2][1] - t[2] * R[0][1]) > ra + rb) return 11;
+
+	// Test axis L = A1 x B2
+	ra = m_v3HalfWidth[0] * AbsR[2][2] + m_v3HalfWidth[2] * AbsR[0][2];
+	rb = l_v3OtherHalfWidth[0] * AbsR[1][1] + l_v3OtherHalfWidth[1] * AbsR[1][0];
+	if (abs(t[0] * R[2][2] - t[2] * R[0][2]) > ra + rb) return 12;
+
+	// Test axis L = A2 x B0
+	ra = m_v3HalfWidth[0] * AbsR[1][0] + m_v3HalfWidth[1] * AbsR[0][0];
+	rb = l_v3OtherHalfWidth[1] * AbsR[2][2] + l_v3OtherHalfWidth[2] * AbsR[2][1];
+	if (abs(t[1] * R[0][0] - t[0] * R[1][0]) > ra + rb) return 13;
+
+	// Test axis L = A2 x B1
+	ra = m_v3HalfWidth[0] * AbsR[1][1] + m_v3HalfWidth[1] * AbsR[0][1];
+	rb = l_v3OtherHalfWidth[0] * AbsR[2][2] + l_v3OtherHalfWidth[2] * AbsR[2][0];
+	if (abs(t[1] * R[0][1] - t[0] * R[1][1]) > ra + rb) return 14;
+
+	// Test axis L = A2 x B2
+	ra = m_v3HalfWidth[0] * AbsR[1][2] + m_v3HalfWidth[1] * AbsR[0][2];
+	rb = l_v3OtherHalfWidth[0] * AbsR[2][1] + l_v3OtherHalfWidth[1] * AbsR[2][0];
+	if (abs(t[1] * R[0][2] - t[0] * R[1][2]) > ra + rb) return 15;
+	
+	//there is no axis test that separates these two objects
 	return eSATResults::SAT_NONE;
 }
+
+/*Different code attempt THAT DOES NOT WORK
+	vector3 Pa = GetCenterGlobal();
+	vector3 Ax = GetModelMatrix()[1];
+	vector3 Ay = GetModelMatrix()[2];
+	vector3 Az = GetModelMatrix()[3];
+	vector3 halfWidthA = GetHalfWidth();
+
+	vector3 Pb = a_pOther->GetCenterGlobal();
+	vector3 Bx = a_pOther->GetModelMatrix()[1];
+	vector3 By = a_pOther->GetModelMatrix()[2];
+	vector3 Bz = a_pOther->GetModelMatrix()[3];
+	vector3 halfWidthB = GetHalfWidth();
+
+	vector3 t = Pb-Pa;
+	glm::mat3x3 R;
+
+
+	//1
+	if (abs(glm::dot(t,Ax))>halfWidthA[0]+ abs(halfWidthB[0]*(glm::dot(Ax,Bx)))+abs(halfWidthB[1]*(glm::dot(Ax,By)))+abs(halfWidthB[2]*(glm::dot(Ax,Bz))))
+	{
+		return 1;
+	}
+	//2
+	if(abs(glm::dot(t, Ay))>halfWidthA[1]+abs(halfWidthB[0]* (glm::dot(Ay, Bx)))+abs(halfWidthB[1]* (glm::dot(Ay, By)))+abs(halfWidthB[2]*(glm::dot(Ay, Bz))))
+	{
+		return 2;
+	}
+	//3
+	if (abs(glm::dot(t, Az)) > halfWidthA[2] + abs(halfWidthB[0] * (glm::dot(Az, Bx))) + abs(halfWidthB[1] * (glm::dot(Az, By))) + abs(halfWidthB[2] * (glm::dot(Az, Bz))))
+	{
+		return 3;
+	}
+	//4
+	if (abs(glm::dot(t, Bx)) > halfWidthB[0] + abs(halfWidthA[0] * (glm::dot(Ax, Bx))) + abs(halfWidthA[1] * (glm::dot(Ay, Bx))) + abs(halfWidthA[2] * (glm::dot(Az, Bx))))
+	{
+		return 4;
+	}
+	//5
+	if (abs(glm::dot(t, By)) > halfWidthB[1] + abs(halfWidthA[0] * (glm::dot(Ax, By))) + abs(halfWidthA[1] * (glm::dot(Ay, By))) + abs(halfWidthA[2] * (glm::dot(Az, By))))
+	{
+		return 5;
+	}
+	//6
+	if (abs(glm::dot(t, Bz)) > halfWidthB[2] + abs(halfWidthA[0] * (glm::dot(Ax, Bz))) + abs(halfWidthA[1] * (glm::dot(Ay, Bz))) + abs(halfWidthA[2] * (glm::dot(Az, Bz))))
+	{
+		return 6;
+	}
+	//7
+	if(abs(glm::dot(t,Az)*glm::dot(Ay,Bx)-glm::dot(t,Ay)*glm::dot(Az,Bx))>abs(halfWidthA[1]*glm::dot(Az,Bx))+abs(halfWidthA[2] * glm::dot(Ay, Bx))+abs(halfWidthB[1] * glm::dot(Ax, Bz))+abs(halfWidthB[2] * glm::dot(Ax, By)))
+	{
+		return 7;
+	}
+	//8
+	if (abs(glm::dot(t, Az) * glm::dot(Ay, By) - glm::dot(t, Ay) * glm::dot(Az, By)) > abs(halfWidthA[1] * glm::dot(Az, By)) + abs(halfWidthA[2] * glm::dot(Ay, By)) + abs(halfWidthB[0] * glm::dot(Ax, Bz)) + abs(halfWidthB[2] * glm::dot(Ax, Bx)))
+	{
+		return 8;
+	}
+	//9
+	if (abs(glm::dot(t, Az) * glm::dot(Ay, Bz) - glm::dot(t, Ay) * glm::dot(Az, Bz)) > abs(halfWidthA[1] * glm::dot(Az, Bz)) + abs(halfWidthA[2] * glm::dot(Ay, Bz)) + abs(halfWidthB[0] * glm::dot(Ax, By)) + abs(halfWidthB[1] * glm::dot(Ax, Bx)))
+	{
+		return 9;
+	}
+	//10
+	if (abs(glm::dot(t, Ax) * glm::dot(Az, Bx) - glm::dot(t, Az) * glm::dot(Ax, Bx)) > abs(halfWidthA[0] * glm::dot(Az, Bx)) + abs(halfWidthA[2] * glm::dot(Ax, Bx)) + abs(halfWidthB[1] * glm::dot(Ay, Bz)) + abs(halfWidthB[2] * glm::dot(Ay, By)))
+	{
+		return 10;
+	}
+	//11
+	if (abs(glm::dot(t, Ax) * glm::dot(Az, By) - glm::dot(t, Az) * glm::dot(Ax, By)) > abs(halfWidthA[0] * glm::dot(Az, By)) + abs(halfWidthA[2] * glm::dot(Ax, By)) + abs(halfWidthB[0] * glm::dot(Ay, Bz)) + abs(halfWidthB[2] * glm::dot(Ay, Bx)))
+	{
+		return 11;
+	}
+	//12
+	if (abs(glm::dot(t, Ax) * glm::dot(Az, Bz) - glm::dot(t, Az) * glm::dot(Ax, Bz)) > abs(halfWidthA[0] * glm::dot(Az, Bz)) + abs(halfWidthA[2] * glm::dot(Ax, Bz)) + abs(halfWidthB[0] * glm::dot(Ay, By)) + abs(halfWidthB[1] * glm::dot(Ay, Bx)))
+	{
+		return 12;
+	}
+	//13
+	if (abs(glm::dot(t, Ay) * glm::dot(Ax, Bx) - glm::dot(t, Ax) * glm::dot(Ay, Bx)) > abs(halfWidthA[0] * glm::dot(Ay, Bx)) + abs(halfWidthA[1] * glm::dot(Ax, Bx)) + abs(halfWidthB[1] * glm::dot(Az, Bz)) + abs(halfWidthB[2] * glm::dot(Az, By)))
+	{
+		return 13;
+	}
+	//14
+	if (abs(glm::dot(t, Ay) * glm::dot(Ax, By) - glm::dot(t, Ax) * glm::dot(Ay, By)) > abs(halfWidthA[0] * glm::dot(Ay, By)) + abs(halfWidthA[1] * glm::dot(Ax, By)) + abs(halfWidthB[0] * glm::dot(Az, Bz)) + abs(halfWidthB[2] * glm::dot(Az, Bx)))
+	{
+		return 14;
+	}
+	//15
+	if (abs(glm::dot(t, Ay) * glm::dot(Ax, Bz) - glm::dot(t, Ax) * glm::dot(Ay, Bz)) > abs(halfWidthA[0] * glm::dot(Ay, Bz)) + abs(halfWidthA[1] * glm::dot(Ax, Bz)) + abs(halfWidthB[0] * glm::dot(Az, By)) + abs(halfWidthB[2] * glm::dot(Az, Bx)))
+	{
+		return 15;
+	}
+	*/
